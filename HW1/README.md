@@ -91,6 +91,7 @@ Replay buffer используется от SB3
 Графики обучения среды Pong:
 
 Результаты расчёта логировались с помощью wandb:
-График длины эпизода показан ниже [OpenAI](https://openai.com)
+График длины эпизода показан ниже [Episodic length](https://wandb.ai/starkirill90/Homework_2/reports/charts-episodic_length-24-03-17-16-02-29---Vmlldzo3MTg2MzYw)
+![Pong GIF](./Images/breakout_episode_return.png)
 
 
