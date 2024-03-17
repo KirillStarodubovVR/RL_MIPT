@@ -15,3 +15,10 @@
 Веса обученной модели.
 Код для запуска модели с готовыми весами.
 Выводы по используемым гиперпараметрам, таким как размер replay buffer, learning rate и т. д.
+
+Для решения задачи выбраны 2 среды: Pong и Breakout
+Breakout:
+![Breakout GIF]([https://example.com/example.gif](https://gymnasium.farama.org/_images/breakout.gif)https://gymnasium.farama.org/_images/breakout.gif)
+
+Pong:
+![Pong GIF]([[https://example.com/example.gif](https://gymnasium.farama.org/_images/breakout.gif)https://gymnasium.farama.org/_images/breakout.gif](https://gymnasium.farama.org/_images/pong.gif)https://gymnasium.farama.org/_images/pong.gif)
