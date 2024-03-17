@@ -20,6 +20,14 @@
 * Код для запуска модели с готовыми весами.
 * Выводы по используемым гиперпараметрам, таким как размер *replay buffer*, *learning rate* и т. д.
 
+### Архитектура репозитория
+- Images (изображения для репозитория)
+- Models (веса моделей)
+- Breakout.py (код для игры breakout)
+- Pong.py (код для игры pong)
+- Inference.py (inference модели и создние .gif)
+- requirements.txt (необходимые библиотеки для кода)
+
 Для решения задачи выбраны 2 среды: Pong и Breakout
 
 Breakout:
@@ -45,7 +53,7 @@ Pong:
 
 **Описание**
 
-Вы управляете правым веслом и соревнуетесь с левым веслом, которым управляет компьютер. Каждый из вас старается отклонить мяч от своих ворот в ворота противника.
+Вы управляете правой ракеткой и соревнуетесь с левой ракеткой, которым управляет компьютер. Каждый из вас старается отклонить мяч от своих ворот в ворота противника.
 
 Архтектура модели DQN:
 ```python
@@ -74,7 +82,7 @@ Replay buffer используется от SB3
     )
 ```
 
-Гиперпараметры модели выбраны следующими 
+Гиперпараметры модели показаны в таблице ниже
 
 
 
@@ -84,14 +92,30 @@ Replay buffer используется от SB3
 | Pong         | 10_000_000     | 1e-4           | 1_000_000     | 0.99         | 0.8            | 800                       | 32         |
 
 
-Графики обучения среды Breakout:
-
-
-
-Графики обучения среды Pong:
+### Графики обучения среды Breakout:
 
 Результаты расчёта логировались с помощью wandb:
-График длины эпизода показан ниже [Episodic length](https://wandb.ai/starkirill90/Homework_2/reports/charts-episodic_length-24-03-17-16-02-29---Vmlldzo3MTg2MzYw)
-![Pong GIF](./Images/breakout_episode_return.png)
+
+График длины эпизода показан ниже [Episodic length](https://wandb.ai/starkirill90/Homework_2/reports/charts-episodic_length-24-03-17-16-12-40---Vmlldzo3MTg2NDUz?accessToken=ihdyijeyjk10vksxpboaz2q2f1y3rrf4zryn1hmlt1w5kqwqck8crmiua4a7e8ke)
+![Breakout GIF](./Images/breakout_episode_length.png)
+
+График длины эпизода показан ниже [Episodic return](https://wandb.ai/starkirill90/Homework_2/reports/charts-episodic_return-24-03-17-16-13-12---Vmlldzo3MTg2NDU2?accessToken=sls2soistu6kuu3fvotkspm4jhnj1mtgatia7b3qgp4ul2f5zwp9d544vyv2f5pr)
+![Breakout GIF](./Images/breakout_episode_return.png)
+
+Видео в формате .gif прохождения агентом игры показано ниже
+
+![Breakout GIF](https://gymnasium.farama.org/_images/breakout.gif)
+
+### Графики обучения среды Pong:
+
+График длины эпизода показан ниже [Episodic length](https://wandb.ai/starkirill90/Homework_2/reports/charts-episodic_length-24-03-17-16-12-40---Vmlldzo3MTg2NDUz?accessToken=ihdyijeyjk10vksxpboaz2q2f1y3rrf4zryn1hmlt1w5kqwqck8crmiua4a7e8ke)
+![Pong GIF](./Images/pong_episode_length.png)
+
+График длины эпизода показан ниже [Episodic return](https://wandb.ai/starkirill90/Homework_2/reports/charts-episodic_return-24-03-17-16-13-12---Vmlldzo3MTg2NDU2?accessToken=sls2soistu6kuu3fvotkspm4jhnj1mtgatia7b3qgp4ul2f5zwp9d544vyv2f5pr)
+![Pong GIF](./Images/pong_episode_return.png)
+
+Видео в формате .gif прохождения агентом игры показано ниже
+
+![Pong GIF](https://gymnasium.farama.org/_images/pong.gif)
 
 
