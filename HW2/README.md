@@ -104,7 +104,17 @@ Replay buffer используется от SB3
 
 Видео в формате .gif прохождения агентом игры показано ниже
 
-![Breakout GIF](https://gymnasium.farama.org/_images/breakout.gif)
+После обучения в 5_000 шагов
+
+![Breakout 5000 GIF](./video/BreakOut_5000.gif)
+
+После обучения в 1_000_000 шагов
+
+![Breakout 1_000_000 GIF](./video/BreakOut_1000000.gif)
+
+После обучения в 8_000_000 шагов
+
+![Breakout 8_000_000 GIF](./video/BreakOut_8000000.gif)
 
 ### Графики обучения среды Pong:
 
@@ -116,6 +126,16 @@ Replay buffer используется от SB3
 
 Видео в формате .gif прохождения агентом игры показано ниже
 
-![Pong GIF](https://gymnasium.farama.org/_images/pong.gif)
+После обучения в 5_000 шагов
+
+![Pong 5000 GIF](./video/Pong_5000.gif)
+
+После обучения в 1_000_000 шагов
+
+![Pong 1_000_000 GIF](./video/Pong_1000000.gif)
+
+После обучения в 8_000_000 шагов
+
+![Pong 8_000_000 GIF](./video/Pong_8000000.gif)
 
 
