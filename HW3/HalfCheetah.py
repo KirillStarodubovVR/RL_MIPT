@@ -14,6 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 
+
 @dataclass
 class Args:
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
@@ -24,7 +25,7 @@ class Args:
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
     """if toggled, cuda will be enabled by default"""
-    track: bool = False
+    track: bool = True
     """if toggled, this experiment will be tracked with Weights and Biases"""
     wandb_project_name: str = "RL_MIPT_HWs"
     """the wandb's project name"""
@@ -36,9 +37,9 @@ class Args:
     # Algorithm specific arguments
     env_id: str = "HalfCheetah-v4"
     """the id of the environment"""
-    total_timesteps: int = 200_000
+    total_timesteps: int = 1_000_000
     """total timesteps of the experiments"""
-    learning_rate: float = 1e-5
+    learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
     num_envs: int = 1
     """the number of parallel game environments"""
@@ -48,7 +49,7 @@ class Args:
     """Toggle learning rate annealing for policy and value networks"""
     gamma: float = 0.99
     """the discount factor gamma"""
-    gae_lambda: float = 0.97
+    gae_lambda: float = 0.95
     """the lambda for the general advantage estimation"""
     num_minibatches: int = 32
     """the number of mini-batches"""
@@ -143,12 +144,14 @@ if __name__ == "__main__":
     args.num_iterations = args.total_timesteps // args.batch_size
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     save_range = np.linspace(start=0.05 * args.num_iterations, stop=args.num_iterations, num=5, dtype=np.uint32)
+    print(run_name)
+    print(save_range)
     if args.track:
         import wandb
 
         wandb.init(
             project=args.wandb_project_name,
-            sync_tensorboard=True,
+            sync_tensorboard=False,
             config=vars(args),
             name=run_name,
             monitor_gym=True,
@@ -176,7 +179,7 @@ if __name__ == "__main__":
 
     agent = Agent(envs).to(device)
     agent.load_state_dict(torch.load(
-        "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1710836467/HalfCheetah_999424.tar",
+        "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1711138219/HalfCheetah_999424.tar",
         map_location=device))
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
@@ -335,23 +338,7 @@ if __name__ == "__main__":
         if iteration in save_range:
             model_path = f"runs/{run_name}/{args.exp_name}_{global_step}.tar"
             torch.save(agent.state_dict(), model_path)
-            continue
-            from evals import evaluate_ppo
 
-            episodic_returns = evaluate_ppo(
-                model_path,
-                make_env,
-                args.env_id,
-                eval_episodes=1,
-                run_name=f"{run_name}",
-                Model=Agent,
-                device=device,
-                gamma=args.gamma,
-            )
-
-            if args.track:
-                for idx, episodic_return in enumerate(episodic_returns):
-                    writer.add_scalar("eval/episodic_return", episodic_return, idx)
 
     envs.close()
     writer.close()

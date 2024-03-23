@@ -1,6 +1,5 @@
 import os
 import random
-from typing import Callable
 import cv2
 import gymnasium as gym
 import imageio
@@ -12,9 +11,12 @@ from torch.distributions import Normal
 
 def make_env(env_id, mode):
     env = gym.make(env_id, render_mode=mode)
-    env = gym.wrappers.RenderCollection(env)
-    env = gym.wrappers.RecordEpisodeStatistics(env)
-
+    env = gym.wrappers.FlattenObservation(env)  # deal with dm_control's Dict observation space
+    env = gym.wrappers.ClipAction(env)
+    env = gym.wrappers.NormalizeObservation(env)
+    env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
+    env = gym.wrappers.NormalizeReward(env, gamma=0.99)
+    env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
     return env
 
 
@@ -65,13 +67,13 @@ torch.backends.cudnn.deterministic = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 envs = make_env("HalfCheetah-v4", "rgb_array")
 agent = Agent(envs).to(device)
-model_path = "./runs/HalfCheetah-v4__HalfCheetah__1__1710836467/HalfCheetah_999424.tar"
+model_path = "./runs/HalfCheetah-v4__HalfCheetah__1__1711138219/HalfCheetah_999424.tar"
 agent.load_state_dict(torch.load(model_path, map_location=device))
 agent.eval()
 
 # for mean and std
 episodic_returns = []
-for i in range(50):
+for i in range(5):
     obs, _ = envs.reset()
     returns = 0
     while True:
@@ -92,7 +94,8 @@ obs, _ = envs.reset()
 frames = []
 while True:
     frame = envs.render()
-    frames.append(np.array(frame).squeeze(0))
+    # frames.append(np.array(frame).squeeze(0))
+    frames.append(np.array(frame))
     # im = cv2.imread(frames[-1])
     # cv2.imshow("im", frames[-1])
     # cv2.waitKey(0)
