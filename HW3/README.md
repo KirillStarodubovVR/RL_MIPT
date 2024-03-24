@@ -23,10 +23,9 @@
 
 ### Архитектура репозитория
 - Images (изображения для репозитория)
-- Models (веса моделей)
-- Breakout.py (код для игры breakout)
-- Pong.py (код для игры pong)
-- Inference.py (inference модели и создние .gif)
+- runs (веса моделей, .gif и логи для тензорборда)
+- HalfCheetah.py (код для среды half-cheetah)
+- ppo_inference.py (inference модели и создние .gif)
 - requirements.txt (необходимые библиотеки для кода)
 
 Для решения задачи выбраны 2 среды: Pong и Breakout
