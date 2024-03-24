@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass
 
 import gymnasium as gym
+import imageio
 import numpy as np
 import torch
 import torch.nn as nn
@@ -12,7 +13,6 @@ import tyro
 from torch.distributions.normal import Normal
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-
 
 
 @dataclass
@@ -25,7 +25,7 @@ class Args:
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
     """if toggled, cuda will be enabled by default"""
-    track: bool = True
+    track: bool = False
     """if toggled, this experiment will be tracked with Weights and Biases"""
     wandb_project_name: str = "RL_MIPT_HWs"
     """the wandb's project name"""
@@ -37,8 +37,10 @@ class Args:
     # Algorithm specific arguments
     env_id: str = "HalfCheetah-v4"
     """the id of the environment"""
-    total_timesteps: int = 1_000_000
+    total_timesteps: int = 3_000_000
     """total timesteps of the experiments"""
+    num_checkpoints: int = 11
+    """number of checkpoint to save weights and create gif"""
     learning_rate: float = 3e-4
     """the learning rate of the optimizer"""
     num_envs: int = 1
@@ -99,6 +101,65 @@ def make_env(env_id, idx, capture_video, gamma):
     return thunk
 
 
+def evaluate(agent, run_name, iteration, seed):
+    # create env
+    def make_env_eval(env_id, mode):
+        env = gym.make(env_id, render_mode=mode)
+        env = gym.wrappers.FlattenObservation(env)  # deal with dm_control's Dict observation space
+        env = gym.wrappers.ClipAction(env)
+        env = gym.wrappers.NormalizeObservation(env)
+        env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
+        env = gym.wrappers.NormalizeReward(env, gamma=0.99)
+        env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
+        return env
+
+    with torch.no_grad():
+        envs_eval = make_env_eval("HalfCheetah-v4", "rgb_array")
+        # for mean and std
+        episodic_returns = []
+
+        for i in range(10):
+            obs, _ = envs_eval.reset(seed=seed)
+            returns = 0
+            while True:
+                actions, _, _, _ = agent.get_action_and_value(torch.Tensor(obs).unsqueeze(0).to(device))
+                next_obs, reward, term, trun, infos = envs_eval.step(actions.squeeze(0).cpu().numpy())
+                obs = next_obs
+                returns += reward
+                if trun:
+                    break
+            episodic_returns.append(returns)
+
+        mean_reward = np.array(episodic_returns).mean()
+        std_reward = np.array(episodic_returns).std()
+        print(mean_reward, std_reward)
+
+        # for gif
+        obs, _ = envs_eval.reset(seed=seed)
+        frames = []
+        while True:
+            frame = envs_eval.render()
+            # frames.append(np.array(frame).squeeze(0))
+            frames.append(np.array(frame))
+            # im = cv2.imread(frames[-1])
+            # cv2.imshow("im", frames[-1])
+            # cv2.waitKey(0)
+            actions, _, _, _ = agent.get_action_and_value(torch.Tensor(obs).unsqueeze(0).to(device))
+            next_obs, _, term, trun, infos = envs_eval.step(actions.squeeze(0).cpu().numpy())
+            obs = next_obs
+            if trun:
+                break
+
+        # Create gif with imageio
+        with imageio.get_writer(
+                os.path.join(f"./runs/{run_name}/eval_{iteration}.gif"),
+                mode="I",
+                fps=30) as writer:
+            for idx, frame in enumerate(frames):
+                writer.append_data(frame)
+
+
+
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
     torch.nn.init.constant_(layer.bias, bias_const)
@@ -143,7 +204,7 @@ if __name__ == "__main__":
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
-    save_range = np.linspace(start=0.05 * args.num_iterations, stop=args.num_iterations, num=5, dtype=np.uint32)
+    save_range = np.linspace(start=0.05 * args.num_iterations, stop=args.num_iterations, num=args.num_checkpoints, dtype=np.uint32)
     print(run_name)
     print(save_range)
     if args.track:
@@ -178,9 +239,9 @@ if __name__ == "__main__":
     assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
 
     agent = Agent(envs).to(device)
-    agent.load_state_dict(torch.load(
-        "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1711138219/HalfCheetah_999424.tar",
-        map_location=device))
+    # agent.load_state_dict(torch.load(
+    #     "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1711138219/HalfCheetah_999424.tar",
+    #     map_location=device))
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
     # ALGO Logic: Storage setup
@@ -322,7 +383,6 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
         if args.track:
             wandb.log({"charts/learning_rate": optimizer.param_groups[0]["lr"],
@@ -338,7 +398,7 @@ if __name__ == "__main__":
         if iteration in save_range:
             model_path = f"runs/{run_name}/{args.exp_name}_{global_step}.tar"
             torch.save(agent.state_dict(), model_path)
-
+            evaluate(agent, run_name, global_step, args.seed)
 
     envs.close()
     writer.close()
