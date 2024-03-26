@@ -15,8 +15,8 @@ def make_env(env_id, mode):
     env = gym.wrappers.ClipAction(env)
     env = gym.wrappers.NormalizeObservation(env)
     env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
-    env = gym.wrappers.NormalizeReward(env, gamma=0.99)
-    env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
+    # env = gym.wrappers.NormalizeReward(env, gamma=0.99)
+    # env = gym.wrappers.TransformReward(env, lambda reward: np.clip(reward, -10, 10))
     return env
 
 
@@ -67,13 +67,13 @@ torch.backends.cudnn.deterministic = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 envs = make_env("HalfCheetah-v4", "rgb_array")
 agent = Agent(envs).to(device)
-model_path = "./runs/HalfCheetah-v4__HalfCheetah__1__1711138219/HalfCheetah_999424.tar"
+model_path = "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1711472237/HalfCheetah_2998272.tar"
 agent.load_state_dict(torch.load(model_path, map_location=device))
 agent.eval()
 
 # for mean and std
 episodic_returns = []
-for i in range(5):
+for i in range(60):
     obs, _ = envs.reset()
     returns = 0
     while True:
@@ -81,7 +81,7 @@ for i in range(5):
         next_obs, reward, term, trun, infos = envs.step(actions.squeeze(0).cpu().numpy())
         obs = next_obs
         returns += reward
-        if trun:
+        if term or trun:
             break
     episodic_returns.append(returns)
 
@@ -103,6 +103,7 @@ while True:
     next_obs, _, term, trun, infos = envs.step(actions.squeeze(0).cpu().numpy())
     obs = next_obs
     if trun:
+        print(len(frames))
         break
 
 # Create gif with imageio

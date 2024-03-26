@@ -239,9 +239,8 @@ if __name__ == "__main__":
     assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
 
     agent = Agent(envs).to(device)
-    # agent.load_state_dict(torch.load(
-    #     "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1711138219/HalfCheetah_999424.tar",
-    #     map_location=device))
+    model_path = "C:/Users/SKG/GitHub/RL_MIPT/HW3/runs/HalfCheetah-v4__HalfCheetah__1__1711213801/HalfCheetah_2998272.tar"
+    agent.load_state_dict(torch.load(model_path, map_location=device))
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
     # ALGO Logic: Storage setup
