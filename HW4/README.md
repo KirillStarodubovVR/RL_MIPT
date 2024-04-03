@@ -75,19 +75,30 @@ class Model:
         self._rng = np.random.default_rng(seed)
 
     def add(self, s: int, a: int, r: float, next_s: int) -> float:
-        self.mask_state[s] = 1
+        self.mask_state[s] += 1
         self.mask_state_action[s][a] = 1
         self.r[s][a] = r
         self.next_s[s][a] = next_s
         return r
 
+    def sample_state(self):
+        s = self._rng.choice(np.flatnonzero(self.mask_state))
+        return s
+
+    def sample_action(self, s):
+        a = self._rng.choice(np.flatnonzero(self.mask_state_action[s]))
+        return a
+
+    def predict_transition(self, s, a):
+        next_s = self.next_s[s][a]
+        r = self.r[s, a]
+        return r, next_s
+
     def sample(self) -> tuple[int, int, float, int]:
-        """
-        returns s, a, r, next_s
-        """
-        s = self._rng.choice(np.where(self.mask_state > 0)[0])
-        a = self._rng.choice(np.where(self.mask_state_action[s] > 0)[0])
-        return s, a, self.r[s][a], self.next_s[s][a]
+        s = self.sample_state()
+        a = self.sample_action(s)
+        r, next_s = self.predict_transition(s, a)
+        return s, a, r, next_s
 ```
 Код можно посмотреть по этой ссылке хххххх
 
