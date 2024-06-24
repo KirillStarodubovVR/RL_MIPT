@@ -17,19 +17,31 @@ class Model:
         self._rng = np.random.default_rng(seed)
 
     def add(self, s: int, a: int, r: float, next_s: int) -> float:
-        self.mask_state[s] = 1
+        self.mask_state[s] += 1
         self.mask_state_action[s][a] = 1
         self.r[s][a] = r
         self.next_s[s][a] = next_s
         return r
 
+    def sample_state(self):
+        s = self._rng.choice(np.flatnonzero(self.mask_state))
+        return s
+
+    def sample_action(self, s):
+        a = self._rng.choice(np.flatnonzero(self.mask_state_action[s]))
+        return a
+
+    def predict_transition(self, s, a):
+        next_s = self.next_s[s][a]
+        r = self.r[s, a]
+        return r, next_s
+
     def sample(self) -> tuple[int, int, float, int]:
-        """
-        returns s, a, r, next_s
-        """
-        s = self._rng.choice(np.where(self.mask_state > 0)[0])
-        a = self._rng.choice(np.where(self.mask_state_action[s] > 0)[0])
-        return s, a, self.r[s][a], self.next_s[s][a]
+        s = self.sample_state()
+        a = self.sample_action(s)
+        r, next_s = self.predict_transition(s, a)
+        return s, a, r, next_s
+
 
 
 class DynaQAgent:
@@ -93,6 +105,7 @@ class DynaQAgent:
             m_s, m_a, m_r, m_next_s = self.model.sample()
             self.update(m_s, m_a, m_r, m_next_s, update_model=False)
 
+
 def save_q_function(q_function, episode, path):
     """
     Convenient function to visualize the progress of training.
@@ -153,8 +166,8 @@ def train(env, agent, n_episodes, on_model_updates, seed, show_progress_schedule
 
         while True:
 
-            action = agent.epsilon_greedy_policy(state, i)
-            # action = agent.epsilon_random_policy(state, i)
+            # action = agent.epsilon_greedy_policy(state, i)
+            action = agent.epsilon_random_policy(state, i)
 
             next_state, reward, terminated, truncated, info = env.step(action)
             agent.update(state, action, reward, next_state, update_model=True)
@@ -181,10 +194,9 @@ def train(env, agent, n_episodes, on_model_updates, seed, show_progress_schedule
                 f"Action: {action}"
             )
 
-    create_gif(path_average_return)
-    create_gif(path_q_function)
-    record_video(env, agent.Q, path_to_video, fps=10)
-    # draw_policy(env, agent.Q, gamma=0.9)
+    # create_gif(path_average_return)
+    # create_gif(path_q_function)
+    # record_video(env, agent.Q, path_to_video, fps=10)
 
     return avg_returns
 
@@ -209,9 +221,9 @@ def record_video(env, Qtable, out_directory, fps=1):
         i += 1
         action = np.argmax(Qtable[state][:])
 
-        # prob = [0.15, 0.15, 0.15, 0.15]
-        # prob[action] = 0.55
-        # action = random.choices(population=[0, 1, 2, 3], weights=prob, k=1)[0]
+        prob = [0.15, 0.15, 0.15, 0.15]
+        prob[action] = 0.55
+        action = random.choices(population=[0, 1, 2, 3], weights=prob, k=1)[0]
 
         state, reward, terminated, truncated, info = env.step(action)
         img = env.render()
@@ -234,9 +246,19 @@ desc = ["SFFFFFFF",
         "FFFFFFFF",
         "FFFFFFFG"]
 
+desc1 = ["SFFFFFFF",
+        "FFFFFFFH",
+        "FFFFFFFF",
+        "FFHFFFFF",
+        "FFFFFFFF",
+        "FFFFFFHF",
+        "FFFHFFFF",
+        "FFFFFFFG"]
+
 env = gym.make("FrozenLake-v1", is_slippery=False, render_mode="rgb_array", desc=desc)
-env.reset(seed=47)
-plt.imshow(env.render())
+# env.reset(seed=47)
+# plt.imshow(env.render())
+# plt.pause(2)
 
 state_space = env.observation_space.n
 print("There are ", state_space, " possible states")
@@ -255,4 +277,44 @@ agent = DynaQAgent(state_space,
                    seed=47
                    )
 
-log_q = train(env, agent, n_episodes=5000, on_model_updates=20, seed=47, show_progress_schedule=50)
+# log_q = train(env, agent, n_episodes=5000, on_model_updates=0, seed=47, show_progress_schedule=50)
+
+x_plot = []
+y_plot = []
+env = gym.make("FrozenLake-v1", is_slippery=False, render_mode="rgb_array", desc=desc1)
+
+for i in [0, 10]:
+
+    env.reset(seed=47)
+    plt.imshow(env.render())
+    plt.pause(2)
+
+    agent = DynaQAgent(state_space,
+                       action_space,
+                       lr=0.7,
+                       gamma=0.95,
+                       max_epsilon=1.0,
+                       min_epsilon=0.05,
+                       decay_rate=0.0005,
+                       f_model=Model,
+                       seed=47
+                       )
+
+    log_q = train(env, agent, n_episodes=5000, on_model_updates=i, seed=47, show_progress_schedule=50)
+    # Extract x and y values from tuples
+    x_values = [point[0] for point in log_q]
+    y_values = [point[1] for point in log_q]
+
+    x_plot.append(x_values)
+    y_plot.append(y_values)
+    # Plot the data
+
+plt.figure()
+plt.plot(x_plot[0], y_plot[0], marker='o', linestyle='-', color='blue', label=f"q-learning")
+plt.plot(x_plot[1], y_plot[1], marker='o', linestyle='--', color='red', label=f"dyna-q")
+plt.xlabel('X Axis')
+plt.ylabel('Y Axis')
+plt.title('Plotting Data Stored in Tuples')
+plt.grid(True)
+plt.legend()
+plt.savefig("./saveimage.png")
