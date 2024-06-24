@@ -17,7 +17,6 @@ from tqdm import tqdm
 from collections import deque
 
 
-
 @dataclass
 class Args:
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
@@ -54,6 +53,10 @@ class Args:
     """the number of steps to run in each environment per policy rollout"""
     anneal_lr: bool = True
     """Toggle learning rate annealing for policy and value networks"""
+    tau_constant: int = 100
+    """Time constant for ppo adaptive exploration"""
+    max_return: float = 300
+    """the maximum return which could be payed by agent in the game"""
     gamma: float = 0.99
     """the discount factor gamma"""
     gae_lambda: float = 0.95
@@ -317,6 +320,7 @@ if __name__ == "__main__":
     rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)
     dones = torch.zeros((args.num_steps, args.num_envs)).to(device)
     values = torch.zeros((args.num_steps, args.num_envs)).to(device)
+    # rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)  # for adaptively exploration or use returns
 
     # TRY NOT TO MODIFY: start the game
     global_step = 0
@@ -391,6 +395,9 @@ if __name__ == "__main__":
         b_returns = returns.reshape(-1)
         b_values = values.reshape(-1)
 
+        # adaptive exploration
+        mean_returns = b_returns / args.num_envs
+
         b_inds = np.arange(args.batch_size)
         clipfracs = []
         for epoch in range(args.update_epochs):
@@ -433,7 +440,8 @@ if __name__ == "__main__":
                     v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
 
                 entropy_loss = entropy.mean()
-                loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
+                recent_return = mean_returns / args.max_return / args.tau_constant
+                loss = pg_loss - recent_return * args.ent_coef * entropy_loss + v_loss * args.vf_coef
 
                 optimizer.zero_grad()
                 loss.backward()
